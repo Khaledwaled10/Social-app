@@ -1,11 +1,14 @@
 import { NextFunction, Request, Response } from "express";
-import authService, { AuthService } from "../service/auth.service";
+import { AuthService } from "../service/auth.service";
 import { toMs } from "../../../pkj/time/time";
 import { JwtPayload } from "jsonwebtoken";
+import { inject, injectable } from "tsyringe";
+import { TOKENS } from "../../../common/di/tokens";
 
-class AuthController{
-    private authservice:AuthService=authService
-    constructor(){
+@injectable()
+export class AuthController{
+   
+    constructor(@inject(TOKENS.AuthService) private authservice:AuthService){
 
     }
 
@@ -30,7 +33,7 @@ res.status(201).json({message:"user create successfully",success:true,data:user}
     try {
       const { email, code } = req.body;
 
-      const result = await authService.verifyEmail(email, code);
+      const result = await this.authservice.verifyEmail(email, code);
 
       return res.status(200).json({
         success: true,
@@ -41,29 +44,43 @@ res.status(201).json({message:"user create successfully",success:true,data:user}
     }
   };
 
+
   
 
-login =async (req:Request,res:Response,next:NextFunction)=>{
+login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await this.authservice.login(req.body);
 
-    try {
+    res.cookie("access_token", result.accessToken, {
+      httpOnly: true,
+      secure: false, // true in production with HTTPS
+      sameSite: "lax",
+      maxAge: 15 * 60 * 1000,
+    });
 
-
-    const result=await this.authservice.login(req.body);
-
-   
-
+    res.cookie("refresh_token", result.refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     return res.status(200).json({
       success: true,
       message: "Login successful",
-      result:result
     });
+
   } catch (error) {
     next(error);
   }
+};
 
 
-}
+
 
 
   sendotp=async(req:Request,res:Response,next:NextFunction)=> {
@@ -98,26 +115,38 @@ login =async (req:Request,res:Response,next:NextFunction)=>{
 
 
 
-loginWithGoogle=async(req:Request, res:Response, next:NextFunction)=>{
+loginWithGoogle = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const token = await authService.loginGoogle(req.body.idToken);
+    const result = await this.authservice.loginGoogle(
+      req.body.idToken
+    );
 
-    console.log("TOKEN FROM SERVICE:", token);
-    console.log("TOKEN TYPE:", typeof token);
-
-    res.cookie("access_token", token, {
+    res.cookie("access_token", result.accessToken, {
       httpOnly: true,
-      maxAge: toMs(1, "hours"),
+      secure: false,
+      sameSite: "lax",
+      maxAge: 15 * 60 * 1000,
     });
 
-    return res.status(201).json({
-      message: "Login With Google successfully",
+    res.cookie("refresh_token", result.refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(200).json({
       success: true,
+      message: "Google login successful",
     });
   } catch (error) {
     next(error);
   }
-}
+};
 
 
 
@@ -126,4 +155,3 @@ loginWithGoogle=async(req:Request, res:Response, next:NextFunction)=>{
 }
 
 
-export default new AuthController();

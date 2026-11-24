@@ -2,7 +2,7 @@
 import { Redis } from "@upstash/redis";
 import { env } from "../../common/config/env";
 
- interface ICacheProvider {
+ export interface ICacheProvider {
     set(
     key: string,
     value: string,

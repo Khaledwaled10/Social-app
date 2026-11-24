@@ -2,8 +2,9 @@ import { HydratedDocument, ObjectId, Types } from "mongoose";
 import { User } from "../model/user.model";
 import { AbstractRepository } from "../../../common/db/db.abstract";
 import { Iuser } from "../../../common/interface/interface";
-
-class UserRepository extends AbstractRepository<Iuser>{
+import { injectable } from "tsyringe";
+@injectable()
+export class UserRepository extends AbstractRepository<Iuser>{
 
     constructor(){
         super(User)

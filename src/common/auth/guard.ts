@@ -10,7 +10,7 @@ export function guard(
   next: NextFunction
 ) {
   try {
-    const token = req.cookies.access_token;
+    const token = req.cookies?.access_token;
 
     if (!token) {
       throw new AppError("No token provided", 401);

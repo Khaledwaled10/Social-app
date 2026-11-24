@@ -1,6 +1,7 @@
 import { DeleteObjectCommand, GetObjectAclCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { ICloudInterface } from "./cloud.interface";
 import { env } from "../../common/config/env";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 interface IS3loud {
   region: string;
@@ -64,4 +65,18 @@ return Promise.resolve(new Buffer("88"))
  return command.input.Key as string
 
   }
+
+  async genrateResignedUrl(file:Partial <Express.Multer.File>,path:string){
+
+    const commnd=new PutObjectCommand({
+      Bucket:this.bucketName,
+      Key:`${path}/${file.originalname}`,
+      ContentType:file.mimetype
+    })
+
+   return await getSignedUrl(this.client,commnd,{expiresIn:30000})
+
+
+  }
+
 }

@@ -1,5 +1,7 @@
+import "reflect-metadata";
 import mongoose from "mongoose";
 import { createApp } from "./app";
+
 import http from "node:http";
 import { connectDB } from "./common/db/connection";
 

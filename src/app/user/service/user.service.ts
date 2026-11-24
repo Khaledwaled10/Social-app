@@ -1,13 +1,20 @@
+import { inject, injectable } from "tsyringe";
 import { s3CloudProvider } from "../../../common/cloud/initS3";
 import { ICloudInterface } from "../../../pkj/cloud/cloud.interface";
 import { AppError } from "../../../pkj/error/appError";
-import userRepository from "../repository/user.repository";
+import userRepository, { UserRepository } from "../repository/user.repository";
 import * as fs from "node:fs"
-class UserService{
- 
-    private cloudProvider:ICloudInterface=s3CloudProvider
-    private userRepository=userRepository
+import { TOKENS } from "../../../common/di/tokens";
 
+@injectable()
+export class UserService{
+ 
+   
+constructor(   @inject(TOKENS.UserRepository) private userRepository:UserRepository
+,@inject(TOKENS.CloudProvider) private cloudProvider:ICloudInterface
+){
+
+}
 
     uploadProfilePicture = async (
   file: Express.Multer.File,
@@ -30,6 +37,29 @@ class UserService{
     throw error;
   }
 };
+
+
+
+  genrateResignedUrl = async (
+  file:Partial <Express.Multer.File>,
+  userID: string
+) => {
+
+  const key = await this.cloudProvider.genrateResignedUrl(
+    file,
+    `users/${userID}`
+  );
+
+    return key;
+  
+};
+
+
+
+
+
+
+
 
 
 deleteProfilePicture = async (userID: string) => {
@@ -59,4 +89,3 @@ deleteProfilePicture = async (userID: string) => {
 
 }
 
-export default new UserService();

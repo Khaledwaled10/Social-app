@@ -1,7 +1,6 @@
 import { LoginDto, RegisterDto } from './../dto/dto';
 import bcrypt from "bcrypt";
 import { Gender, Provider } from "../../../common/enum/Uenum";
-import userRepository from '../../user/repository/user.repository';
 import { userNotExist } from '../../user/error/error';
 import { comparePassword, hashPassword } from '../../../common/utilts/hash';
 import crypto, { randomUUID } from "crypto";
@@ -16,15 +15,23 @@ import  jwt, { JwtPayload }  from 'jsonwebtoken';
 import { env } from '../../../common/config/env';
 import { genrateToken } from '../../../common/utilts/token';
 import { OAuth2Client } from 'google-auth-library';
+import { inject, injectable } from 'tsyringe';
+import { TOKENS } from '../../../common/di/tokens';
+import { Imailjet } from '../../../pkj/mail/mailjet';
+import { UserRepository } from '../../user/repository/user.repository';
 
+
+@injectable()
 export class AuthService {
   private client = new OAuth2Client();
-  constructor() {}
+  constructor(
+    @inject(TOKENS.MailjetProvider) private mailjetProvider :Imailjet,@inject(TOKENS.UserRepository) private userRepository:UserRepository
+  ) {}
 
 
 
 async register(registerdto: RegisterDto) {
-  const isEmailExist = await userRepository.findByEmail(
+  const isEmailExist = await this.userRepository.findByEmail(
     registerdto.email
   );
 
@@ -37,7 +44,7 @@ async register(registerdto: RegisterDto) {
     12
   );
 
-  const user = await userRepository.create({
+  const user = await this.userRepository.create({
     userName: registerdto.userName,
     email: registerdto.email,
     password: hashedPassword,
@@ -66,7 +73,7 @@ async register(registerdto: RegisterDto) {
 
 
 async verifyEmail(email: string, code: string) {
-  const user = await userRepository.findByEmail(email);
+  const user = await this.userRepository.findByEmail(email);
 
   if (!user) {
     throw new AppError("User not found", 404);
@@ -90,7 +97,7 @@ async verifyEmail(email: string, code: string) {
     throw new AppError("Invalid or expired OTP", 400);
   }
 
-  await userRepository.update(
+  await this.userRepository.update(
     { _id: user._id },
     { isVerified: true },
     { new: true }
@@ -107,7 +114,7 @@ async verifyEmail(email: string, code: string) {
 
 async login(loginDto: LoginDto) {
   // 1. Find user
-  const user = await userRepository.findByEmail(
+  const user = await this.userRepository.findByEmail(
     loginDto.email
   );
 
@@ -156,7 +163,7 @@ async login(loginDto: LoginDto) {
  async sendOtp(email:string){
   //user exist
 
-  const user = await userRepository.findByEmail(email);
+  const user = await this.userRepository.findByEmail(email);
 
   if (user===null){
     throw new AppError("Invalid email or password", 401);
@@ -189,7 +196,7 @@ async resetPassword(
   newPassword: string
 ) {
   // 1. Check user exists
-  const user = await userRepository.findByEmail(email);
+  const user = await this.userRepository.findByEmail(email);
 
   if (!user) {
     throw new AppError("User not found", 404);
@@ -211,7 +218,7 @@ async resetPassword(
   const hashedPassword = await hashPassword(newPassword);
 
   // 5. Update password
-  await userRepository.update(
+  await this.userRepository.update(
     { email },
     { password: hashedPassword }
   );
@@ -262,11 +269,11 @@ async loginGoogle(idToken: string) {
   const payload = await this.verifyGoogle(idToken);
 
   // 2. Find user by email
-  let user = await userRepository.findByEmail(payload.email);
+  let user = await this.userRepository.findByEmail(payload.email);
 
   // 3. If user doesn't exist, create new user
   if (!user) {
-    user = await userRepository.create({
+    user = await this.userRepository.create({
       userName: payload.name,
       email: payload.email,
       provider: Provider.GOOGLE,
@@ -276,19 +283,19 @@ async loginGoogle(idToken: string) {
     });
   }
 
-  // 4. Generate tokens
-  return genrateToken({
-    id: user._id,
-    email: user.email,
-  });
-}
-
-
-
+return genrateToken({
+  id: user._id.toString(),
+  email: user.email,
+});
 
 
 }
 
 
 
-export default new AuthService();
+
+
+}
+
+
+

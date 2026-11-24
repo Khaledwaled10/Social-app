@@ -19,7 +19,7 @@ async update(
 ) {
   return this.model.findOneAndUpdate(
     filter,
-    { $set: newData },
+     newData ,
     options
   );
 }

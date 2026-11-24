@@ -1,6 +1,9 @@
 import { NextFunction, Request, Response } from 'express';
-import { cacheProvider } from './init';
+import { container } from 'tsyringe';
+import { TOKENS } from '../di/tokens';
+import { ICacheProvider } from '../../pkj/cache/redis';
 
+const cacheProvider=container.resolve<ICacheProvider>(TOKENS.CacheProvider)
 export async function withCache(ttl=3600){
     return async (req:Request,res:Response,next:NextFunction)=>{
  if (req.method !== 'GET') {

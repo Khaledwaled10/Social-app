@@ -5,4 +5,9 @@ export interface ICloudInterface {
   deleteFile(key:string): Promise<void>;
 
   getFile(key:string): Promise<Buffer>;
+
+  genrateResignedUrl(file:Partial <Express.Multer.File> , path: string): Promise<string>;
+
+
+
 }
