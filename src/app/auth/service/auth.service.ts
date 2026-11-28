@@ -19,13 +19,15 @@ import { inject, injectable } from 'tsyringe';
 import { TOKENS } from '../../../common/di/tokens';
 import { Imailjet } from '../../../pkj/mail/mailjet';
 import { UserRepository } from '../../user/repository/user.repository';
+import { FirebaseProvider } from '../../../pkj/email/firebase';
 
 
 @injectable()
 export class AuthService {
   private client = new OAuth2Client();
   constructor(
-    @inject(TOKENS.MailjetProvider) private mailjetProvider :Imailjet,@inject(TOKENS.UserRepository) private userRepository:UserRepository
+    @inject(TOKENS.MailjetProvider) private mailjetProvider :Imailjet,@inject(TOKENS.UserRepository) private userRepository:UserRepository,
+    @inject(TOKENS.FirebaseProvider) private firebaseProvider :FirebaseProvider
   ) {}
 
 
@@ -137,17 +139,21 @@ async login(loginDto: LoginDto) {
     errorUser.userNotVerified();
   }
 
+  this.userRepository.update({_id:user.id},{$addToSet:{FCMTokens:loginDto.fcmTokens}})
+
   const accessToken = jwt.sign(
     { id: user._id },
     env.jwt.secretKey,
-    { expiresIn: "15m" }
+    { expiresIn: "1d" }
   );
 
   const refreshToken = jwt.sign(
     { id: user._id },
-    env.jwt.secretKey,
+    env.jwt.refreshKey,
     { expiresIn: "7d" }
   );
+
+  await this.firebaseProvider.sendNotfication(loginDto.fcmTokens,'social-app','Welcome back')
 
   return {
     message: "Login successful",
@@ -264,14 +270,10 @@ async  verifyGoogle(
 
 
 async loginGoogle(idToken: string) {
-
-  // 1. Verify Google Token
   const payload = await this.verifyGoogle(idToken);
 
-  // 2. Find user by email
   let user = await this.userRepository.findByEmail(payload.email);
 
-  // 3. If user doesn't exist, create new user
   if (!user) {
     user = await this.userRepository.create({
       userName: payload.name,
@@ -283,14 +285,15 @@ async loginGoogle(idToken: string) {
     });
   }
 
-return genrateToken({
-  id: user._id.toString(),
-  email: user.email,
-});
+  if (!user) {
+    throw new AppError("Failed to create Google user", 500);
+  }
 
-
+  return genrateToken({
+    id: user._id.toString(),
+    email: user.email,
+  });
 }
-
 
 
 

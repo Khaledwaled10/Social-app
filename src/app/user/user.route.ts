@@ -22,4 +22,18 @@ userRouter.post(
   userController.generateSingedUrl
 );
 
+
+
+userRouter.get(
+  "/profile/:userId",
+  userController.getProfile
+);
+
+
+userRouter.patch(
+  "/profile",
+  guard,
+  userController.updateProfile
+);
+
 export default userRouter;

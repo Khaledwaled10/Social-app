@@ -16,7 +16,9 @@ export const env = {
 password_email:process.env.PASSWORD_SEND_EMAIL as string,
     },
     jwt:{
-        secretKey:process.env.JWT_SECRET_KEY as string
+        secretKey:process.env.JWT_SECRET_KEY as string,
+        refreshKey:process.env.JWT_REFRESH_KEY as string
+
     }
     , upstash:{
      url:  process.env.UPSTASH_REDIS_REST_URL as string ,

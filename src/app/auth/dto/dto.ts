@@ -13,6 +13,7 @@ export interface RegisterDto{
 export interface LoginDto{
       email:string;
       password:string;
+      fcmTokens:string
   
 }
 

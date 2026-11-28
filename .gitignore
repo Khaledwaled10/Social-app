@@ -8,4 +8,5 @@ dist/
 .env
 
 
+src\common\config\social-app-969c3-firebase-adminsdk-fbsvc-711a2495f8.json
 /src/common/config/*.json
